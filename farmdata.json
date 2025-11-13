@@ -1,0 +1,281 @@
+[
+    {
+        "id": "82cd13a4c691f06a",
+        "type": "tab",
+        "label": "TempHum Average",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "22a9318ed20d5b14",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Temp",
+        "topic": "farm/temp",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "b77a9373cf6c6dc2"
+            ]
+        ]
+    },
+    {
+        "id": "449503c5aac7766f",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Humidity",
+        "topic": "farm/hum",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 150,
+        "y": 160,
+        "wires": [
+            [
+                "33fda35682d16225"
+            ]
+        ]
+    },
+    {
+        "id": "b77a9373cf6c6dc2",
+        "type": "function",
+        "z": "82cd13a4c691f06a",
+        "name": "Store Temp",
+        "func": "// Lưu dữ liệu nhiệt độ vào flow context\nlet data = flow.get('tempData') || [];\ndata.push({value: Number(msg.payload), time: Date.now()});\n\n// Giữ 12h dữ liệu gần nhất\ndata = data.filter(d => d.time >= Date.now() - 12*3600*1000);\nflow.set('tempData', data);\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 80,
+        "wires": [
+            [
+                "9e2410b079f5c149"
+            ]
+        ]
+    },
+    {
+        "id": "33fda35682d16225",
+        "type": "function",
+        "z": "82cd13a4c691f06a",
+        "name": "Store Hum",
+        "func": "// Lưu dữ liệu độ ẩm vào flow context\nlet data = flow.get('humData') || [];\ndata.push({value: Number(msg.payload), time: Date.now()});\n\n// Giữ 12h dữ liệu gần nhất\ndata = data.filter(d => d.time >= Date.now() - 12*3600*1000);\nflow.set('humData', data);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 360,
+        "y": 160,
+        "wires": [
+            [
+                "9e2410b079f5c149"
+            ]
+        ]
+    },
+    {
+        "id": "9e2410b079f5c149",
+        "type": "function",
+        "z": "82cd13a4c691f06a",
+        "name": "Avg Temp & Hum",
+        "func": "function avgLast(hours, data) {\n    const cutoff = Date.now() - hours*3600*1000;\n    const arr = data.filter(d => d.time >= cutoff).map(d => d.value);\n    if (arr.length === 0) return 0;\n    return arr.reduce((a,b)=>a+b,0)/arr.length;\n}\n\nlet tempData = flow.get('tempData') || [];\nlet humData = flow.get('humData') || [];\n\nmsg.payload = {\n    temp4h: avgLast(4,tempData).toFixed(2),\n    temp8h: avgLast(8,tempData).toFixed(2),\n    temp12h: avgLast(12,tempData).toFixed(2),\n    hum4h: avgLast(4,humData).toFixed(2),\n    hum8h: avgLast(8,humData).toFixed(2),\n    hum12h: avgLast(12,humData).toFixed(2)\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 120,
+        "wires": [
+            [
+                "cadd81173764ea41"
+            ]
+        ]
+    },
+    {
+        "id": "cadd81173764ea41",
+        "type": "ui_text",
+        "z": "82cd13a4c691f06a",
+        "group": "farm_dashboard",
+        "order": 23,
+        "width": 18,
+        "height": 6,
+        "name": "Avg Temp & Hum",
+        "label": "Trung bình nhiệt độ & độ ẩm",
+        "format": "4h: {{msg.payload.temp4h}}°C / {{msg.payload.hum4h}}%      |   8h: {{msg.payload.temp8h}}°C / {{msg.payload.hum8h}}%          |    12h: {{msg.payload.temp12h}}°C / {{msg.payload.hum12h}}%",
+        "layout": "row-spread",
+        "className": "",
+        "style": true,
+        "font": "Times New Roman,Times,serif",
+        "fontSize": "23",
+        "color": "#000000",
+        "x": 820,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "mqtt_temp",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Temperature",
+        "topic": "farm/temp",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 250,
+        "y": 360,
+        "wires": [
+            [
+                "combine_data"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_hum",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Humidity",
+        "topic": "farm/hum",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 250,
+        "y": 420,
+        "wires": [
+            [
+                "combine_data"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_soil",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Soil Moisture",
+        "topic": "farm/soil",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 250,
+        "y": 480,
+        "wires": [
+            [
+                "combine_data"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_light",
+        "type": "mqtt in",
+        "z": "82cd13a4c691f06a",
+        "name": "Light Intensity",
+        "topic": "farm/light",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker",
+        "inputs": 0,
+        "x": 250,
+        "y": 540,
+        "wires": [
+            [
+                "combine_data"
+            ]
+        ]
+    },
+    {
+        "id": "combine_data",
+        "type": "function",
+        "z": "82cd13a4c691f06a",
+        "name": "Combine Sensor Data",
+        "func": "// Lấy giá trị hiện tại từ flow context\nlet temp = Number(flow.get('temp') || 0);\nlet hum = Number(flow.get('hum') || 0);\nlet soil = Number(flow.get('soil') || 0);\nlet light = Number(flow.get('light') || 0);\n\n// Cập nhật giá trị mới từ MQTT\nswitch (msg.topic) {\n    case 'farm/temp': temp = Number(msg.payload); break;\n    case 'farm/hum': hum = Number(msg.payload); break;\n    case 'farm/soil': soil = Number(msg.payload); break;\n    case 'farm/light': light = Number(msg.payload); break;\n}\n\n// Lưu lại vào flow context\nflow.set('temp', temp);\nflow.set('hum', hum);\nflow.set('soil', soil);\nflow.set('light', light);\n\n// Kiểm tra nếu chưa có timeout, tạo timeout 5 phút\nif (!flow.get('sendTimeout')) {\n    flow.set('sendTimeout', setTimeout(() => {\n        let t = flow.get('temp') || 0;\n        let h = flow.get('hum') || 0;\n        let s = flow.get('soil') || 0;\n        let l = flow.get('light') || 0;\n\n        let msgSQL = {\n            topic: \"INSERT INTO sensors (temperature, humidity, soil_moisture, light_intensity) VALUES (?, ?, ?, ?)\",\n            payload: [t, h, s, l]\n        };\n        node.warn(\"Sending to MySQL: \" + JSON.stringify(msgSQL.payload));\n\n        // Gửi ra node tiếp theo (MySQL)\n        node.send(msgSQL);\n\n        // Xóa timeout\n        flow.set('sendTimeout', null);\n    }, 300000)); // 300000 ms = 5 phút\n}\n\n// Không gửi msg ngay lập tức\nreturn null;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 440,
+        "wires": [
+            [
+                "mysql_node"
+            ]
+        ]
+    },
+    {
+        "id": "mysql_node",
+        "type": "mysql",
+        "z": "82cd13a4c691f06a",
+        "mydb": "mysql_config",
+        "name": "Save to MySQL",
+        "x": 800,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "mqtt_broker",
+        "type": "mqtt-broker",
+        "name": "MQTT Broker",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthQos": "0",
+        "willQos": "0"
+    },
+    {
+        "id": "farm_dashboard",
+        "type": "ui_group",
+        "name": "SmartFarm_DACS4_PVMT",
+        "tab": "farm_tab",
+        "order": 1,
+        "disp": true,
+        "width": 26,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "mysql_config",
+        "type": "MySQLdatabase",
+        "name": "smartfarm",
+        "host": "localhost",
+        "port": "3306",
+        "db": "smartfarm",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "farm_tab",
+        "type": "ui_tab",
+        "name": "SmartFarm_DACS4_PVMT",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "d3550bc513b7a3df",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "node-red-node-mysql": "2.0.0"
+        }
+    }
+]
