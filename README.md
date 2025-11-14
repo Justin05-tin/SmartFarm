@@ -12,4 +12,3 @@ Tăng hiệu quả canh tác nhờ tự động hóa.
 
 Giảm công lao động và hạn chế thất thoát nước, năng lượng.
 
-2️⃣ Phần cứng
